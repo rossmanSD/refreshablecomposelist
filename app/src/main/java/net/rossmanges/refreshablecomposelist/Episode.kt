@@ -1,6 +1,7 @@
 package net.rossmanges.refreshablecomposelist
 
-data class ListItem(
+data class Episode(
+    val id: Int,
     val name: String,
     val isSelected: Boolean
 )

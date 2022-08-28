@@ -3,32 +3,44 @@ package net.rossmanges.refreshablecomposelist
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import kotlinx.coroutines.delay
 import net.rossmanges.refreshablecomposelist.ui.theme.RefreshableComposeListTheme
 import net.rossmanges.refreshablecomposelist.viewmodels.MainViewModel
 
+/**
+ * Example project to implement a scrollable, refreshable, multi-selectable list
+ * of tv-show episodes using JetPack Compose.
+ *
+ * Largely based off of these internet resources:
+ *
+ *  Philipp Lackner's Compose MultiSelect project on YT/GitHub:
+ *  * https://youtu.be/pvNcJXprrKM
+ *  * https://github.com/philipplackner/ComposeMultiSelect
+ *
+ */
 class MainActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             RefreshableComposeListTheme {
+                val viewModel: MainViewModel = viewModel()
                 // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
@@ -42,39 +54,59 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun Greeting(name: String) {
-    Text(text = "Hello $name!")
+fun Header() {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(colorResource(id = R.color.blue_gray)),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = "Pull down to refresh.",
+            modifier = Modifier.padding(start = 16.dp)
+        )
+        Button(
+            onClick = { /* TODO - retrieve list of selected episodes */ },
+            modifier = Modifier.padding(end = 16.dp)
+        ) {
+            Text("Next")
+        }
+    }
 }
 
 @Composable
+@OptIn(ExperimentalFoundationApi::class)
 fun RefreshableListWithMultiSelect(viewModel: MainViewModel = viewModel()) {
-    // TODO - the items should be generated dynamically
-    // temporarily define static list of items
-    var items by remember {
-        mutableStateOf(
-            (1..20).map {
-                ListItem(name = "item $it", isSelected = false)
-            }
-        )
-    }
+    var episodes by remember { mutableStateOf(viewModel.getEpisodes()) }
+    var refreshing by remember { mutableStateOf(false) }
 
-    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    LaunchedEffect(refreshing) {
+        if (refreshing) {
+            delay(1000)
+            refreshing = false
+        }
+    }
     SwipeRefresh(
-        state = rememberSwipeRefreshState(isRefreshing),
+        state = rememberSwipeRefreshState(refreshing),
         onRefresh = {
-            // TODO - dynamically reload list of items
+            refreshing = true
+            episodes = viewModel.getEpisodes()
         }
     ) {
         LazyColumn(
-            Modifier
-                .fillMaxSize()
+            Modifier.fillMaxSize()
         ) {
-            items(items.size) { i ->
+            stickyHeader {
+                Header()
+            }
+
+            items(episodes.size) { i ->
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            items = items.mapIndexed { j, item ->
+                            episodes = episodes.mapIndexed { j, item ->
                                 if (i == j) {
                                     item.copy(isSelected = !item.isSelected)
                                 } else item
@@ -84,8 +116,8 @@ fun RefreshableListWithMultiSelect(viewModel: MainViewModel = viewModel()) {
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = items[i].name)
-                    if (items[i].isSelected)
+                    Text(text = episodes[i].name)
+                    if (episodes[i].isSelected)
                         Icon(
                             imageVector = Icons.Default.CheckCircle,
                             contentDescription = "Selected",
@@ -95,14 +127,12 @@ fun RefreshableListWithMultiSelect(viewModel: MainViewModel = viewModel()) {
             }
         }
     }
-
 }
 
 @Preview(showBackground = true)
 @Composable
-fun DefaultPreview() {
+fun DefaultPreview(viewModel: MainViewModel = viewModel()) {
     RefreshableComposeListTheme {
-//        Greeting("Android")
         RefreshableListWithMultiSelect()
     }
 }

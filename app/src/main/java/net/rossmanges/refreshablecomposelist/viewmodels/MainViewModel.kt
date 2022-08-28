@@ -2,12 +2,17 @@ package net.rossmanges.refreshablecomposelist.viewmodels
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import net.rossmanges.refreshablecomposelist.Episode
 
 class MainViewModel : ViewModel() {
-    private val mIsRefreshing = MutableStateFlow(false)
+    val isRefreshing = MutableStateFlow(false)
 
-    val isRefreshing: StateFlow<Boolean>
-        get() = mIsRefreshing.asStateFlow()
+    fun getEpisodes(): List<Episode> {
+        // TODO - the items should be generated dynamically
+        // temporarily define static list of items
+        val episodes = (0..19).map {
+            Episode(id = it, name = "Episode ${(1..1000).random()}", isSelected = false)
+        }
+        return episodes
+    }
 }
